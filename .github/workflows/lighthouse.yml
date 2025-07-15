@@ -79,3 +79,14 @@ jobs:
       with:
         name: lighthouse-summary
         path: lighthouse-reports/summary_*.csv
+    
+    - name: Commit summary CSV to repo
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@users.noreply.github.com"
+        git fetch origin
+        git checkout main
+        cp lighthouse-reports/summary_*.csv .
+        git add summary_*.csv
+        git commit -m "Add Lighthouse summary for $(date +'%Y-%m-%d')" || echo "No changes to commit"
+        git push
