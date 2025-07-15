@@ -39,41 +39,59 @@ jobs:
         const fs = require('fs');
         const path = require('path');
         const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-
+    
         const dir = 'json-summaries';
         const files = fs.readdirSync(dir);
         const records = [];
-        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-
+    
+        const rawDate = new Date();
+        const today = rawDate.toLocaleDateString('en-US'); // MM/DD/YYYY
+        const filename = rawDate.toISOString().slice(0, 10); // YYYY-MM-DD for file name
+    
         files.forEach(file => {
           const data = JSON.parse(fs.readFileSync(path.join(dir, file)));
           const url = data.finalUrl;
           const categories = data.categories;
+          const perf = Math.round(categories.performance.score * 100);
+          const access = Math.round(categories.accessibility.score * 100);
+          const best = Math.round(categories['best-practices'].score * 100);
+          const seo = Math.round(categories.seo.score * 100);
+          const total = perf + access + best + seo;
+    
           records.push({
             Website: url,
-            Performance: Math.round(categories.performance.score * 100),
-            Accessibility: Math.round(categories.accessibility.score * 100),
-            BestPractices: Math.round(categories['best-practices'].score * 100),
-            SEO: Math.round(categories.seo.score * 100),
+            Performance: perf,
+            Accessibility: access,
+            BestPractices: best,
+            SEO: seo,
+            Total: total,
             Date: today
           });
         });
-
+    
+        // Sort by total descending and assign rank
+        records.sort((a, b) => b.Total - a.Total);
+        records.forEach((record, index) => {
+          record.Rank = index + 1;
+        });
+    
         const csvWriter = createCsvWriter({
-          path: \`lighthouse-reports/summary_\${today}.csv\`,
+          path: `lighthouse-reports/summary_${filename}.csv`,
           header: [
-            {id: 'Website', title: 'Website'},
-            {id: 'Performance', title: 'Performance'},
-            {id: 'Accessibility', title: 'Accessibility'},
-            {id: 'BestPractices', title: 'Best Practices'},
-            {id: 'SEO', title: 'SEO'},
-            {id: 'Date', title: 'Date'}
+            { id: 'Website', title: 'Website' },
+            { id: 'Performance', title: 'Performance' },
+            { id: 'Accessibility', title: 'Accessibility' },
+            { id: 'BestPractices', title: 'Best Practices' },
+            { id: 'SEO', title: 'SEO' },
+            { id: 'Total', title: 'Total Score' },
+            { id: 'Rank', title: 'Rank' },
+            { id: 'Date', title: 'Date' }
           ]
         });
-
-        csvWriter.writeRecords(records).then(() => console.log('CSV with date written.'));
+    
+        csvWriter.writeRecords(records).then(() => console.log('CSV with rank and formatted date written.'));
         EOF
-
+        
     - name: Upload summary CSV only
       uses: actions/upload-artifact@v4
       with:
