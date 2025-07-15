@@ -2,7 +2,7 @@ name: Weekly Lighthouse Audit
 
 on:
   schedule:
-    - cron: '0 12 * * 5'  # Every Friday at 8am Eastern (12pm UTC)
+    - cron: '0 12 * * 5'  # Every Friday at 12pm UTC = 8am Eastern
   workflow_dispatch:
 
 jobs:
