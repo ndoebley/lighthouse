@@ -2,8 +2,8 @@ name: Weekly Lighthouse Audit
 
 on:
   schedule:
-    - cron: '0 12 * * 5'  # Every Friday at 12pm UTC = 8am Eastern
-  workflow_dispatch:      # Enables manual trigger
+    - cron: '0 12 * * 5'  # Every Friday at 8am Eastern (12pm UTC)
+  workflow_dispatch:
 
 jobs:
   lighthouse:
@@ -18,20 +18,61 @@ jobs:
       with:
         node-version: '20'
 
-    - name: Install Lighthouse
-      run: npm install -g lighthouse
+    - name: Install Dependencies
+      run: |
+        npm install -g lighthouse
+        npm install csv-writer fs
 
-    - name: Run Lighthouse on URLs
+    - name: Run Lighthouse and Generate JSON Reports
       run: |
         mkdir lighthouse-reports
+        mkdir json-summaries
         while IFS= read -r url
         do
           name=$(echo $url | sed 's|https\?://||; s|/|_|g')
-          lighthouse "$url" --output html --output-path="lighthouse-reports/${name}.html" --chrome-flags="--headless"
+          lighthouse "$url" --output json --output-path="json-summaries/${name}.json" --chrome-flags="--headless"
         done < urls.txt
 
-    - name: Upload reports
+    - name: Create Summary CSV from JSON
+      run: |
+        node <<EOF
+        const fs = require('fs');
+        const path = require('path');
+        const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+
+        const dir = 'json-summaries';
+        const files = fs.readdirSync(dir);
+        const records = [];
+
+        files.forEach(file => {
+          const data = JSON.parse(fs.readFileSync(path.join(dir, file)));
+          const url = data.finalUrl;
+          const categories = data.categories;
+          records.push({
+            Website: url,
+            Performance: Math.round(categories.performance.score * 100),
+            Accessibility: Math.round(categories.accessibility.score * 100),
+            BestPractices: Math.round(categories['best-practices'].score * 100),
+            SEO: Math.round(categories.seo.score * 100)
+          });
+        });
+
+        const csvWriter = createCsvWriter({
+          path: 'lighthouse-reports/summary.csv',
+          header: [
+            {id: 'Website', title: 'Website'},
+            {id: 'Performance', title: 'Performance'},
+            {id: 'Accessibility', title: 'Accessibility'},
+            {id: 'BestPractices', title: 'Best Practices'},
+            {id: 'SEO', title: 'SEO'}
+          ]
+        });
+
+        csvWriter.writeRecords(records).then(() => console.log('CSV summary written.'));
+        EOF
+
+    - name: Upload All Reports
       uses: actions/upload-artifact@v4
       with:
-        name: lighthouse-reports
+        name: lighthouse-results
         path: lighthouse-reports
