@@ -1,0 +1,37 @@
+name: Weekly Lighthouse Audit
+
+on:
+  schedule:
+    - cron: '0 12 * * 5'  # Every Friday at 12pm UTC = 8am Eastern
+  workflow_dispatch:      # Enables manual trigger
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install Lighthouse
+      run: npm install -g lighthouse
+
+    - name: Run Lighthouse on URLs
+      run: |
+        mkdir lighthouse-reports
+        while IFS= read -r url
+        do
+          name=$(echo $url | sed 's|https\?://||; s|/|_|g')
+          lighthouse "$url" --output html --output-path="lighthouse-reports/${name}.html" --chrome-flags="--headless"
+        done < urls.txt
+
+    - name: Upload reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: lighthouse-reports
+        path: lighthouse-reports
