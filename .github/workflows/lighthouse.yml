@@ -74,8 +74,8 @@ jobs:
         csvWriter.writeRecords(records).then(() => console.log('CSV with date written.'));
         EOF
 
-    - name: Upload All Reports
+    - name: Upload summary CSV only
       uses: actions/upload-artifact@v4
       with:
-        name: lighthouse-results
-        path: lighthouse-reports
+        name: lighthouse-summary
+        path: lighthouse-reports/summary_*.csv
