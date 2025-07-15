@@ -43,6 +43,7 @@ jobs:
         const dir = 'json-summaries';
         const files = fs.readdirSync(dir);
         const records = [];
+        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
         files.forEach(file => {
           const data = JSON.parse(fs.readFileSync(path.join(dir, file)));
@@ -53,22 +54,24 @@ jobs:
             Performance: Math.round(categories.performance.score * 100),
             Accessibility: Math.round(categories.accessibility.score * 100),
             BestPractices: Math.round(categories['best-practices'].score * 100),
-            SEO: Math.round(categories.seo.score * 100)
+            SEO: Math.round(categories.seo.score * 100),
+            Date: today
           });
         });
 
         const csvWriter = createCsvWriter({
-          path: 'lighthouse-reports/summary.csv',
+          path: \`lighthouse-reports/summary_\${today}.csv\`,
           header: [
             {id: 'Website', title: 'Website'},
             {id: 'Performance', title: 'Performance'},
             {id: 'Accessibility', title: 'Accessibility'},
             {id: 'BestPractices', title: 'Best Practices'},
-            {id: 'SEO', title: 'SEO'}
+            {id: 'SEO', title: 'SEO'},
+            {id: 'Date', title: 'Date'}
           ]
         });
 
-        csvWriter.writeRecords(records).then(() => console.log('CSV summary written.'));
+        csvWriter.writeRecords(records).then(() => console.log('CSV with date written.'));
         EOF
 
     - name: Upload All Reports
