@@ -39,15 +39,15 @@ jobs:
         const fs = require('fs');
         const path = require('path');
         const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-    
+        
         const dir = 'json-summaries';
         const files = fs.readdirSync(dir);
         const records = [];
-    
+        
         const rawDate = new Date();
         const today = rawDate.toLocaleDateString('en-US'); // MM/DD/YYYY
         const filename = rawDate.toISOString().slice(0, 10); // YYYY-MM-DD for file name
-    
+        
         files.forEach(file => {
           const data = JSON.parse(fs.readFileSync(path.join(dir, file)));
           const url = data.finalUrl;
@@ -57,7 +57,7 @@ jobs:
           const best = Math.round(categories['best-practices'].score * 100);
           const seo = Math.round(categories.seo.score * 100);
           const total = perf + access + best + seo;
-    
+        
           records.push({
             Website: url,
             Performance: perf,
@@ -68,15 +68,15 @@ jobs:
             Date: today
           });
         });
-    
+        
         // Sort by total descending and assign rank
         records.sort((a, b) => b.Total - a.Total);
         records.forEach((record, index) => {
           record.Rank = index + 1;
         });
-    
+        
         const csvWriter = createCsvWriter({
-          path: `lighthouse-reports/summary_${filename}.csv`,
+          path: 'lighthouse-reports/summary_' + filename + '.csv',
           header: [
             { id: 'Website', title: 'Website' },
             { id: 'Performance', title: 'Performance' },
@@ -88,7 +88,7 @@ jobs:
             { id: 'Date', title: 'Date' }
           ]
         });
-    
+        
         csvWriter.writeRecords(records).then(() => console.log('CSV with rank and formatted date written.'));
         EOF
         
